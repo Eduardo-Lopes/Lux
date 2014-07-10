@@ -40,6 +40,11 @@
 //		add diffuse IBL
 		#ifdef DIFFCUBE_ON
 			fixed4	diff_ibl = texCUBE (_DiffCubeIBL, worldNormal);
+			
+			#ifdef LUX_INFLUENCE
+				diff_ibl = lerp(texCUBE (_DiffCubeIBL2, worldNormal),diff_ibl,_Influence);
+			#endif
+			
 			#ifdef LUX_LINEAR
 				// if colorspace = linear alpha has to be brought to linear too (rgb already is): alpha = pow(alpha,2.233333333).
 				// approximation taken from http://chilliant.blogspot.de/2012/08/srgb-approximations-for-hlsl.html
@@ -60,12 +65,18 @@
 		
 //		add specular IBL		
 		#ifdef SPECCUBE_ON
+			#if defined (LUX_LIGHTING_CT)
+				o.Specular *= o.Specular * (o.Specular * 0.305306011 + 0.682171111) + 0.012522878;
+			#endif
+			float mipSelect = 1.0f - o.Specular;
+			mipSelect = mipSelect * mipSelect * 7; // but * 6 would look better...
+		
 			//#ifdef LUX_BOXPROJECTION
 			//	half3 worldRefl;
 			//#else
-				half3 worldRefl = WorldReflectionVector (IN, o.Normal);	
+				half3 worldRefl = WorldReflectionVector (IN, o.Normal);
 			//#endif
-
+			
 		//	Boxprojection / Rotation
 			#ifdef LUX_BOXPROJECTION
 				// Bring worldRefl and worldPos into Cube Map Space
@@ -77,14 +88,27 @@
 				FurthestPlane /= worldRefl;
 				float Distance = min(FurthestPlane.x, min(FurthestPlane.y, FurthestPlane.z));
 				worldRefl = PosCS + worldRefl * Distance;
+				
+				#ifdef LUX_INFLUENCE
+				half3 worldRefl2 = WorldReflectionVector (IN, o.Normal);
+
+				worldRefl2 = mul(_CubeMatrix_Trans2, float4(worldRefl2,1)).xyz;
+				PosCS = mul(_CubeMatrix_Inv2,float4(IN.worldPos,1)).xyz;
+				FirstPlaneIntersect = _CubemapSize2 - PosCS;
+				SecondPlaneIntersect = -_CubemapSize2 - PosCS;
+				FurthestPlane = (worldRefl2 > 0.0) ? FirstPlaneIntersect : SecondPlaneIntersect;
+				FurthestPlane /= worldRefl2;
+				Distance = min(FurthestPlane.x, min(FurthestPlane.y, FurthestPlane.z));
+				worldRefl2 = PosCS + worldRefl2 * Distance;
+				#endif
 			#endif
 
-			#if defined (LUX_LIGHTING_CT)
-				o.Specular *= o.Specular * (o.Specular * 0.305306011 + 0.682171111) + 0.012522878;
-			#endif
-			float mipSelect = 1.0f - o.Specular;
-			mipSelect = mipSelect * mipSelect * 7; // but * 6 would look better...
 			fixed4 spec_ibl = texCUBElod (_SpecCubeIBL, float4(worldRefl, mipSelect));
+			
+			#ifdef LUX_INFLUENCE
+				spec_ibl = lerp(texCUBElod (_SpecCubeIBL2, float4(worldRefl2, mipSelect)), spec_ibl,  _Influence);
+			#endif
+			
 			#ifdef LUX_LINEAR
 				// if colorspace = linear alpha has to be brought to linear too (rgb already is): alpha = pow(alpha,2.233333333) / approximation taken from http://chilliant.blogspot.de/2012/08/srgb-approximations-for-hlsl.html
 				spec_ibl.a *= spec_ibl.a * (spec_ibl.a * 0.305306011 + 0.682171111) + 0.012522878;
