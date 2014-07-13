@@ -90,6 +90,10 @@
 				worldRefl = PosCS + worldRefl * Distance;
 				
 				#ifdef LUX_INFLUENCE
+				
+				PosCS = abs(PosCS/_CubemapSize);
+				Distance = max(0,1-max(PosCS.x,max(PosCS.y,PosCS.z)));
+
 				half3 worldRefl2 = WorldReflectionVector (IN, o.Normal);
 
 				worldRefl2 = mul(_CubeMatrix_Trans2, float4(worldRefl2,1)).xyz;
@@ -98,8 +102,14 @@
 				SecondPlaneIntersect = -_CubemapSize2 - PosCS;
 				FurthestPlane = (worldRefl2 > 0.0) ? FirstPlaneIntersect : SecondPlaneIntersect;
 				FurthestPlane /= worldRefl2;
-				Distance = min(FurthestPlane.x, min(FurthestPlane.y, FurthestPlane.z));
-				worldRefl2 = PosCS + worldRefl2 * Distance;
+				float Distance2 = min(FurthestPlane.x, min(FurthestPlane.y, FurthestPlane.z));
+				worldRefl2 = PosCS + worldRefl2 * Distance2;
+				
+				PosCS = abs(PosCS/_CubemapSize);
+				Distance2 = max(0,1-max(PosCS.x,max(PosCS.y,PosCS.z)));
+				
+				_Influence = Distance/(Distance+Distance2);
+				
 				#endif
 			#endif
 
