@@ -102,14 +102,14 @@ public class CubemapManager : MonoBehaviour
 
 	}
 
-	private LuxEnvProbe[] FilterProbes(LuxEnvProbe[] linkProbes, Transform elemTransform)
+	private LuxEnvProbe[] FilterProbes(LuxEnvProbe[] linkProbes, Transform elemTransform, Bounds elemBound)
 	{
 		List<LuxEnvProbe> returnProbes = new List<LuxEnvProbe>();
 
 		foreach(var linkProbe in linkProbes)
 		{
 			Vector3 diff = linkProbe.transform.position-elemTransform.position;
-			Vector3 dist = linkProbe.BoxSize/2.0f;
+			Vector3 dist = linkProbe.BoxSize/2.0f+elemBound.extents;
 			
 			if (dist.x >= Mathf.Abs(diff.x) &&
 			    dist.y >= Mathf.Abs(diff.y) &&
@@ -122,7 +122,7 @@ public class CubemapManager : MonoBehaviour
 		return returnProbes.ToArray();
 	}
 
-	public LuxEnvProbe[] UpdateProbes(LuxEnvProbe[] currProbes, Transform elemTransform)
+	public LuxEnvProbe[] UpdateProbes(LuxEnvProbe[] currProbes, Transform elemTransform, Bounds elemBound)
 	{
 		List<LuxEnvProbe> returnProbes = new List<LuxEnvProbe>();
 
@@ -146,7 +146,7 @@ public class CubemapManager : MonoBehaviour
 				returnProbes.Add(probe);
 		}
 
-		return FilterProbes(returnProbes.ToArray(),elemTransform);
+		return FilterProbes(returnProbes.ToArray(),elemTransform, elemBound);
 	}
 
 	void OnDrawGizmos() {
