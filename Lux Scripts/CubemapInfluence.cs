@@ -8,28 +8,31 @@ public class CubemapInfluence : MonoBehaviour {
 
 	private CubemapManager manager;
 
+	private MeshRenderer meshRenderer;
+
 	// Use this for initialization
 	void Start () {
 		manager = UnityEngine.Object.FindObjectOfType<CubemapManager>();
+
+		meshRenderer = GetComponent<MeshRenderer>();
 	}
 
 	float coverage(LuxEnvProbe probe)
 	{
-		float dx = Mathf.Abs(probe.transform.position.x - transform.position.x);
-		float dy = Mathf.Abs(probe.transform.position.y - transform.position.y);
-		float dz = Mathf.Abs(probe.transform.position.z - transform.position.z);
+		Vector3 pointInProbe = probe.transform.InverseTransformPoint(transform.position);
+
+		pointInProbe = new Vector3(
+			Mathf.Abs(pointInProbe.x)-meshRenderer.bounds.extents.x/probe.transform.localScale.x,
+			Mathf.Abs(pointInProbe.y)-meshRenderer.bounds.extents.y/probe.transform.localScale.y,
+			Mathf.Abs(pointInProbe.z)-meshRenderer.bounds.extents.z/probe.transform.localScale.z);
 
 		float start_dist = 0.0f;
 
-		float end_dist_x = probe.BoxSize.x/2.0f;
-		float end_dist_y = probe.BoxSize.y/2.0f;
-		float end_dist_z = probe.BoxSize.z/2.0f;
+		float influencex = 1.0f-Mathf.Clamp((pointInProbe.x - start_dist) / (1.0f - start_dist),0,1);
+		float influencey = 1.0f-Mathf.Clamp((pointInProbe.y - start_dist) / (1.0f - start_dist),0,1);
+		float influencez = 1.0f-Mathf.Clamp((pointInProbe.z - start_dist) / (1.0f - start_dist),0,1);
 
-		float influencex = 1.0f-Mathf.Max(0, Mathf.Min(1, (dx - start_dist) / (end_dist_x - start_dist)));
-		float influencey = 1.0f-Mathf.Max(0, Mathf.Min(1, (dy - start_dist) / (end_dist_y - start_dist)));
-		float influencez = 1.0f-Mathf.Max(0, Mathf.Min(1, (dz - start_dist) / (end_dist_z - start_dist)));
-
-		return Mathf.Min(influencex,Mathf.Min(influencey,influencez));
+		return Mathf.Min(influencex,influencey,influencez);
 	}
 
 	float CalculateInfluences(out int probe1, out int probe2)
@@ -39,7 +42,6 @@ public class CubemapInfluence : MonoBehaviour {
 		int influence_count = probes.Length;
 
 		float[] influences = new float[influence_count];
-		//float[] blendfactors = new float[influence_count];
 
 		int [] pos = new int[influence_count];
 
@@ -103,7 +105,7 @@ public class CubemapInfluence : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update () {
-		probes = manager.UpdateProbes(probes, transform);
+		probes = manager.UpdateProbes(probes, transform, meshRenderer.bounds);
 
 		if(renderer != null)
 		{
@@ -125,7 +127,7 @@ public class CubemapInfluence : MonoBehaviour {
 						renderer.materials[j].SetTexture("_SpecCubeIBL", probes[probe1].SPECCube );
 					}
 
-					Debug.Log(string.Format("{0} {1} {2}",probes[probe1].name,probes[probe2].name,influence));
+					//Debug.Log(string.Format("{0} {1} {2}",probes[probe1].name,probes[probe2].name,influence));
 
 					renderer.materials[j].SetFloat("_Influence", influence);
 
