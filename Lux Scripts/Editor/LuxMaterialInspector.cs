@@ -18,9 +18,17 @@ public class LuxMaterialInspector : MaterialEditor {
 		string[] keyWords = targetMat.shaderKeywords;
 
 		// IBL settings
+		string[] influenceOptions = {"OFF","OBJECT","PIXEL"};
+		string[] influenceKeywordOptions = {"LUX_INFLUENCE_OFF","LUX_INFLUENCE_OBJECT","LUX_INFLUENCE_PIXEL"};
+
 		bool diffCube = keyWords.Contains ("DIFFCUBE_OFF");
 		bool specCube = keyWords.Contains ("SPECCUBE_OFF");
 		bool ambientOcclusion = keyWords.Contains ("LUX_AO_ON");
+		int influence = -1;
+
+		if (keyWords.Contains("LUX_INFLUENCE_OFF")) influence = 0;
+		if (keyWords.Contains("LUX_INFLUENCE_OBJECT")) influence = 1;
+		if (keyWords.Contains("LUX_INFLUENCE_PIXEL")) influence = 2;
 
 		GUILayout.BeginVertical("box");
 		GUILayout.Label("Customize Material");
@@ -39,6 +47,13 @@ public class LuxMaterialInspector : MaterialEditor {
 			EditorGUILayout.LabelField("Disable specular Cube IBL");
 			EditorGUILayout.EndHorizontal();
 		}
+
+		// influence
+		EditorGUILayout.BeginHorizontal();
+		influence = EditorGUILayout.Popup(influence, influenceOptions, GUILayout.Width(64));
+		EditorGUILayout.LabelField("Enable influence Cube IBL");
+		EditorGUILayout.EndHorizontal();
+
 		// AO
 		if (targetMat.HasProperty("_AO") ) {
 			EditorGUILayout.BeginHorizontal();
@@ -66,6 +81,11 @@ public class LuxMaterialInspector : MaterialEditor {
 			else {
 				keywords.Add("LUX_AO_OFF");
 			}
+
+			if (influence!=-1) {
+				keywords.Add(influenceKeywordOptions[influence]);
+			}
+
 			targetMat.shaderKeywords = keywords.ToArray();
 			EditorUtility.SetDirty (targetMat);
 		}

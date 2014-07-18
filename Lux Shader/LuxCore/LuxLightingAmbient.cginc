@@ -41,7 +41,7 @@
 		#ifdef DIFFCUBE_ON
 			fixed4	diff_ibl = texCUBE (_DiffCubeIBL, worldNormal);
 			
-			#ifdef LUX_INFLUENCE
+			#ifndef LUX_INFLUENCE_OFF
 				diff_ibl = lerp(texCUBE (_DiffCubeIBL2, worldNormal),diff_ibl,_Influence);
 			#endif
 			
@@ -76,6 +76,10 @@
 			//#else
 				half3 worldRefl = WorldReflectionVector (IN, o.Normal);
 			//#endif
+
+			#ifndef LUX_INFLUENCE_OFF			
+				half3 worldRefl2 = WorldReflectionVector (IN, o.Normal);
+			#endif
 			
 		//	Boxprojection / Rotation
 			#ifdef LUX_BOXPROJECTION
@@ -89,12 +93,10 @@
 				float Distance = min(FurthestPlane.x, min(FurthestPlane.y, FurthestPlane.z));
 				worldRefl = PosCS + worldRefl * Distance;
 				
-				#ifdef LUX_INFLUENCE
+				#ifdef LUX_INFLUENCE_PIXEL
 				
 				PosCS = abs(PosCS/_CubemapSize);
 				Distance = max(0,1-max(PosCS.x,max(PosCS.y,PosCS.z)));
-
-				half3 worldRefl2 = WorldReflectionVector (IN, o.Normal);
 
 				worldRefl2 = mul(_CubeMatrix_Trans2, float4(worldRefl2,1)).xyz;
 				PosCS = mul(_CubeMatrix_Inv2,float4(IN.worldPos,1)).xyz;
@@ -105,17 +107,27 @@
 				float Distance2 = min(FurthestPlane.x, min(FurthestPlane.y, FurthestPlane.z));
 				worldRefl2 = PosCS + worldRefl2 * Distance2;
 				
-				PosCS = abs(PosCS/_CubemapSize);
+				PosCS = abs(PosCS/_CubemapSize2);
 				Distance2 = max(0,1-max(PosCS.x,max(PosCS.y,PosCS.z)));
 				
 				_Influence = Distance/(Distance+Distance2);
 				
 				#endif
+			#else
+				#ifdef LUX_INFLUENCE_PIXEL
+				float3 PosCS = abs(mul(_CubeMatrix_Inv,float4(IN.worldPos,1)).xyz)/_CubemapSize;
+				float Distance = max(0,1-max(PosCS.x,max(PosCS.y,PosCS.z)));
+				
+				PosCS = abs(mul(_CubeMatrix_Inv2,float4(IN.worldPos,1)).xyz)/_CubemapSize2;
+				float Distance2 = max(0,1-max(PosCS.x,max(PosCS.y,PosCS.z)));
+
+				_Influence = Distance/(Distance+Distance2);
+				#endif
 			#endif
 
 			fixed4 spec_ibl = texCUBElod (_SpecCubeIBL, float4(worldRefl, mipSelect));
 			
-			#ifdef LUX_INFLUENCE
+			#ifndef LUX_INFLUENCE_OFF
 				spec_ibl = lerp(texCUBElod (_SpecCubeIBL2, float4(worldRefl2, mipSelect)), spec_ibl,  _Influence);
 			#endif
 			

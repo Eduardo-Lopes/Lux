@@ -9,14 +9,21 @@ Properties {
 	_DiffCubeIBL ("Custom Diffuse Cube 1", Cube) = "black" {}
 	_SpecCubeIBL ("Custom Specular Cube 1", Cube) = "black" {}
 
+	[HideInInspector]
 	_DiffCubeIBL2 ("Custom Diffuse Cube 2", Cube) = "black" {}
+	
+	[HideInInspector]
 	_SpecCubeIBL2 ("Custom Specular Cube 2", Cube) = "black" {}
 
+	[HideInInspector]
 	_Influence ("Influence", Range(0.0,1.0)) = 1
 
-	//_CubemapPositionWS ("Cube Position (Worldspace)", Vector) = (1,1,1,0)
+	[HideInInspector]
 	_CubemapSize ("Cube Size 1", Vector) = (1,1,1,0)
+	
+	[HideInInspector]
 	_CubemapSize2 ("Cube Size 2", Vector) = (1,1,1,0)
+	
 	
 	// _Shininess property is needed by the lightmapper - otherwise it throws errors
 	[HideInInspector] _Shininess ("Shininess (only for Lightmapper)", Float) = 1.0//0.5
@@ -38,6 +45,7 @@ SubShader {
 	#pragma multi_compile LUX_LIGHTING_BP LUX_LIGHTING_CT
 	#pragma multi_compile LUX_LINEAR LUX_GAMMA
 	#pragma multi_compile DIFFCUBE_ON DIFFCUBE_OFF
+	#pragma multi_compile LUX_INFLUENCE_OFF LUX_INFLUENCE_OBJECT LUX_INFLUENCE_PIXEL
 
 //	Does not make sense here...
 //	#pragma multi_compile SPECCUBE_ON SPECCUBE_OFF
@@ -55,8 +63,6 @@ SubShader {
 //	Activate Box Projection in LuxLightingAmbient
 	#define LUX_BOXPROJECTION
 
-	#define LUX_INFLUENCE         
-
 	// include should be called after all defines
 	#include "../LuxCore/LuxLightingDirect.cginc"
 
@@ -64,17 +70,16 @@ SubShader {
 	sampler2D _MainTex; 
 	sampler2D _SpecTex;
 	sampler2D _BumpMap;
-	float _Influence; 
 	#ifdef DIFFCUBE_ON
 		samplerCUBE _DiffCubeIBL;
-		#ifdef LUX_INFLUENCE
+		#ifndef LUX_INFLUENCE_OFF
 			samplerCUBE _DiffCubeIBL2;
 		#endif 
 	#endif
 	samplerCUBE _SpecCubeIBL;
-	#ifdef LUX_INFLUENCE
-		samplerCUBE _SpecCubeIBL2;
-	#endif
+		#ifndef LUX_INFLUENCE_OFF
+			samplerCUBE _SpecCubeIBL2;
+		#endif
 	#ifdef LUX_AO_ON
 		sampler2D _AO; 
 	#endif
@@ -85,7 +90,11 @@ SubShader {
 	float4x4 _CubeMatrix_Trans;
 	float4x4 _CubeMatrix_Inv;
 
-	#ifdef LUX_INFLUENCE
+	#if defined(LUX_INFLUENCE_OBJECT) || defined(LUX_INFLUENCE_PIXEL)
+	float _Influence; 
+	#endif	
+	
+	#ifdef LUX_INFLUENCE_PIXEL
 	float3 _CubemapSize2;
 	float4x4 _CubeMatrix_Trans2;
 	float4x4 _CubeMatrix_Inv2;

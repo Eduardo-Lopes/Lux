@@ -99,7 +99,6 @@ public class CubemapManager : MonoBehaviour
 
 	void Update()
 	{
-
 	}
 
 	private LuxEnvProbe[] FilterProbes(LuxEnvProbe[] linkProbes, Transform elemTransform, Bounds elemBound)
